@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
     const server = http.createServer(app);
 
     server.listen(PORT, () => {
-      console.log(`✅ Server escuchando en http://192.168.1.66:${PORT}`);
+      console.log(`✅ Server escuchando en http://10.31.5.135:${PORT}`);
     });
 
     // Manejo elegante de cierre
