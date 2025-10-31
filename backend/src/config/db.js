@@ -21,15 +21,15 @@ async function connectDB() {
       socketTimeoutMS: 45000,
       maxPoolSize: 5,
       minPoolSize: 0,
-      family: 4, // fuerza IPv4 si hay líos con IPv6/DNS
-      // ❌ NO poner keepAlive / keepAliveInitialDelay (ya no soportadas)
+      family: 4 // fuerza IPv4 si hay líos con IPv6/DNS
+      // No uses keepAlive/keepalive ni keepAliveInitialDelay (driver moderno no lo soporta)
     };
 
-    cached.promise = mongoose.connect(MONGO_URI, opts).then((m) => {
+    cached.promise = mongoose.connect(MONGO_URI, opts).then(m => {
       const c = m.connection;
-      c.on('connected',    () => console.log('🟢 MongoDB conectado'));
-      c.on('error',        (e) => console.error('🔴 MongoDB error:', e));
-      c.on('disconnected', () => console.warn('🟠 MongoDB desconectado'));
+      c.on('connected',    () => console.log('🟢 Mongo conectado'));
+      c.on('error',        (e) => console.error('🔴 Mongo error:', e));
+      c.on('disconnected', () => console.warn('🟠 Mongo desconectado'));
       return m;
     });
   }
