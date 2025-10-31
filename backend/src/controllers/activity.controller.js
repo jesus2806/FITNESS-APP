@@ -90,15 +90,14 @@ exports.listActivities = async (req, res, next) => {
   }
 };
 
-// 🔧 Weekly con TZ para que la gráfica no quede en cero cuando cambie la zona horaria
 exports.weeklyStats = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const tz = req.query.tz || 'America/Mexico_City';
 
-    const end = new Date();                // ahora
+    const end = new Date();
     const start = new Date(end);
-    start.setDate(end.getDate() - 6);      // últimos 7 días
+    start.setDate(end.getDate() - 6);
 
     const rows = await Activity.aggregate([
       { $match: { user: new Types.ObjectId(userId), date: { $gte: start, $lte: end } } },
@@ -108,18 +107,16 @@ exports.weeklyStats = async (req, res, next) => {
       { $sort: { day: 1 } },
     ]);
 
-    // normalizar 7 días
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const cur = new Date(start);
-      cur.setDate(start.getDate() + i);
-      const yyyy = cur.getFullYear();
-      const mm = String(cur.getMonth() + 1).padStart(2, '0');
-      const dd = String(cur.getDate()).padStart(2, '0');
-      const key = `${yyyy}-${mm}-${dd}`;
+    // 👉 Generar las 7 fechas con TZ (en-CA = YYYY-MM-DD)
+    const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(end);
+      d.setDate(end.getDate() - (6 - i));
+      const key = fmt.format(d); // "YYYY-MM-DD" en TZ correcta
       const hit = rows.find(r => r.day === key);
-      days.push({ date: key, calories: hit?.calories || 0, durationMin: hit?.durationMin || 0 });
-    }
+      return { date: key, calories: hit?.calories || 0, durationMin: hit?.durationMin || 0 };
+    });
 
     return res.json({ days });
   } catch (err) {
@@ -174,22 +171,23 @@ exports.updateActivity = async (req, res, next) => {
   }
 };
 
-// listar por un día concreto (YYYY-MM-DD) respetando TZ
 exports.listByDay = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const tz = req.query.tz || 'America/Mexico_City';
-    const { date } = req.params; // 'YYYY-MM-DD'
+    const ymd = req.params.date; // "YYYY-MM-DD"
 
-    // construye rango [día 00:00, 23:59:59] en TZ deseado usando $dateTrunc en find no aplica,
-    // así que calculamos en JS asumiendo que el servidor está en UTC.
-    const start = new Date(`${date}T00:00:00.000Z`);
-    const end = new Date(`${date}T23:59:59.999Z`);
-
-    const activities = await Activity.find({
-      user: userId,
-      date: { $gte: start, $lte: end },
-    }).sort({ date: -1 });
+    const activities = await Activity.aggregate([
+      { $match: { user: new Types.ObjectId(userId) } },
+      {
+        $addFields: {
+          dayKey: { $dateToString: { date: '$date', format: '%Y-%m-%d', timezone: tz } }
+        }
+      },
+      { $match: { dayKey: ymd } },
+      { $sort: { date: -1 } },
+      { $project: { dayKey: 0 } }
+    ]);
 
     return res.json({ activities });
   } catch (err) {
