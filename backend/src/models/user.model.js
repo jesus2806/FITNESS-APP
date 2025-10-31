@@ -11,7 +11,9 @@ const UserSchema = new Schema(
       trim: true
     },
     passwordHash: { type: String, required: true },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' }
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    weightKg: { type: Number, default: 70 },
+    weeklyGoalKcal: { type: Number, default: 3500, min: 100 },
   },
   { timestamps: true }
 );
