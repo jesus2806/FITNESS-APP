@@ -16,6 +16,4 @@ const UserSchema = new Schema(
   { timestamps: true }
 );
 
-UserSchema.index({ email: 1 }, { unique: true });
-
 module.exports = model('User', UserSchema);
