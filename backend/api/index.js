@@ -1,3 +1,4 @@
+// backend/api/index.js
 const serverless = require('serverless-http');
 const app = require('../src/app');
 const { connectDB } = require('../src/config/db');
@@ -6,7 +7,7 @@ const handler = serverless(app);
 
 module.exports = async (req, res) => {
   try {
-    await connectDB(); // garantiza conexión en cada request
+    await connectDB();            // garantiza conexión ANTES de manejar la request
   } catch (err) {
     console.error('DB connect failed:', err);
     res.statusCode = 500;

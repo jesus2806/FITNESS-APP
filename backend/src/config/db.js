@@ -1,10 +1,11 @@
+// src/config/db.js
 const mongoose = require('mongoose');
 
 const { MONGO_URI, MONGO_DB, NODE_ENV } = process.env;
 if (!MONGO_URI) throw new Error('Falta MONGO_URI');
 
 mongoose.set('strictQuery', true);
-mongoose.set('bufferCommands', false); // no encolar operaciones sin conexión
+mongoose.set('bufferCommands', false); // no encolar si no hay conexión
 
 let cached = global._mongooseCached || { conn: null, promise: null };
 global._mongooseCached = cached;
@@ -21,11 +22,11 @@ async function connectDB() {
       socketTimeoutMS: 45000,
       maxPoolSize: 5,
       minPoolSize: 0,
-      family: 4 // fuerza IPv4 si hay líos con IPv6/DNS
-      // No uses keepAlive/keepalive ni keepAliveInitialDelay (driver moderno no lo soporta)
+      family: 4, // fuerza IPv4 si hay líos de DNS/IPv6
+      // NO uses keepAlive / keepalive / keepAliveInitialDelay
     };
 
-    cached.promise = mongoose.connect(MONGO_URI, opts).then(m => {
+    cached.promise = mongoose.connect(MONGO_URI, opts).then((m) => {
       const c = m.connection;
       c.on('connected',    () => console.log('🟢 Mongo conectado'));
       c.on('error',        (e) => console.error('🔴 Mongo error:', e));
@@ -33,7 +34,6 @@ async function connectDB() {
       return m;
     });
   }
-
   cached.conn = await cached.promise;
   return cached.conn;
 }
