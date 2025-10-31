@@ -95,30 +95,35 @@ exports.weeklyStats = async (req, res, next) => {
     const userId = req.user.id;
     const tz = req.query.tz || 'America/Mexico_City';
 
-    const end = new Date();
+    const end = new Date();            // ahora
     const start = new Date(end);
-    start.setDate(end.getDate() - 6);
+    start.setDate(end.getDate() - 6);  // últimos 7 días
 
     const rows = await Activity.aggregate([
       { $match: { user: new Types.ObjectId(userId), date: { $gte: start, $lte: end } } },
       { $addFields: { day: { $dateTrunc: { date: '$date', unit: 'day', timezone: tz } } } },
-      { $group: { _id: '$day', calories: { $sum: '$calories' }, durationMin: { $sum: '$durationMin' } } },
-      { $project: { _id: 0, day: { $dateToString: { date: '$day', format: '%Y-%m-%d', timezone: tz } }, calories: 1, durationMin: 1 } },
-      { $sort: { day: 1 } },
+      // 👇 proyecta como `date` en lugar de `day`
+      { $project: { 
+          _id: 0,
+          date: { $dateToString: { date: '$day', format: '%Y-%m-%d', timezone: tz } },
+          calories: 1,
+          durationMin: 1
+      } },
+      { $sort: { date: 1 } },
     ]);
 
-    // 👉 Generar las 7 fechas con TZ (en-CA = YYYY-MM-DD)
+    // Rellenar exactamente 7 días con TZ (formato YYYY-MM-DD)
     const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
 
     const days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(end);
       d.setDate(end.getDate() - (6 - i));
-      const key = fmt.format(d); // "YYYY-MM-DD" en TZ correcta
-      const hit = rows.find(r => r.day === key);
+      const key = fmt.format(d); // "YYYY-MM-DD"
+      const hit = rows.find(r => r.date === key);  // 👈 compara contra `date`
       return { date: key, calories: hit?.calories || 0, durationMin: hit?.durationMin || 0 };
     });
 
-    return res.json({ days });
+    return res.json({ days }); // si prefieres, podrías devolver directamente `days` como array plano
   } catch (err) {
     return next(err);
   }
