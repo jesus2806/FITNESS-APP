@@ -1,3 +1,10 @@
+// Load local environment variables when running locally
+try {
+  require('dotenv').config();
+} catch (e) {
+  // ignore if dotenv isn't available in the environment
+}
+
 const serverless = require('serverless-http');
 const app = require('../src/app');
 const { connectDB } = require('../src/config/db');

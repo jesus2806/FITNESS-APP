@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
   const uri = process.env.MONGO_URI;
   if (!uri) {
-    throw new Error('Falta MONGO_URI en .env');
+    console.warn('⚠️ MONGO_URI no está definida. Se omite la conexión a MongoDB.');
+    return null;
   }
 
   mongoose.connection.on('connected', () => {
