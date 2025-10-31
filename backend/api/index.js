@@ -1,24 +1,21 @@
-// Load local environment variables when running locally
-try {
-  require('dotenv').config();
-} catch (e) {
-  // ignore if dotenv isn't available in the environment
-}
-
 const serverless = require('serverless-http');
 const app = require('../src/app');
 const { connectDB } = require('../src/config/db');
 
-const handler = serverless(app);
+let isReady = false;
 
 module.exports = async (req, res) => {
   try {
-    await connectDB();            // garantiza conexión ANTES de manejar la request
+    if (!isReady) {
+      await connectDB(); 
+      isReady = true;
+    }
+    const handler = serverless(app);
+    return handler(req, res);
   } catch (err) {
-    console.error('DB connect failed:', err);
+    console.error('Boot/DB failed:', err);
     res.statusCode = 500;
     res.setHeader('content-type', 'application/json');
-    return res.end(JSON.stringify({ error: 'DB connection failed' }));
+    res.end(JSON.stringify({ error: 'FUNCTION_BOOT_FAILED', detail: String(err?.message || err) }));
   }
-  return handler(req, res);
 };
